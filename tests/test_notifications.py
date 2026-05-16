@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
+from gb import state
 from gb.notifications import (
     CleanedCheckSuite,
     CleanedPullRequest,
@@ -130,3 +133,73 @@ def test_cleanup_failed_ci_mixed_notification_types(client: FakeClient):
 def test_cleaned_check_suite_str_format():
     c = CleanedCheckSuite(repo="a/x", title="oops")
     assert str(c) == "a/x — oops"
+
+
+# --- done-cache integration (applies to both cleanup-* functions) -----------
+
+
+def test_cleanup_merged_skips_threads_already_in_done_cache(client: FakeClient):
+    cached = make_pr_notification(repo="a/x", number=1, id="t-1", title="already done")
+    fresh = make_pr_notification(repo="a/x", number=2, id="t-2", title="new merged")
+    client.notifications = [cached, fresh]
+    client.merged = {("a/x", 2): True}
+
+    # Seed the on-disk cache with the first thread at its current updated_at.
+    state.save({"t-1": cached.updated_at.isoformat()})
+
+    cleaned = cleanup_merged_pr_notifications(client)
+
+    assert cleaned == [CleanedPullRequest(repo="a/x", number=2, title="new merged")]
+    assert client.marked_done == [fresh]
+    # Crucially, we should not have hit is_pr_merged for the cached thread.
+    assert client.is_pr_merged_calls == [("a/x", 2)]
+
+
+def test_cleanup_merged_reprocesses_thread_with_newer_updated_at(client: FakeClient):
+    earlier = datetime(2026, 5, 1, tzinfo=UTC)
+    later = earlier + timedelta(days=1)
+    reactivated = make_pr_notification(
+        repo="a/x", number=1, id="t-1", title="reactivated", updated_at=later
+    )
+    client.notifications = [reactivated]
+    client.merged = {("a/x", 1): True}
+    # Cache says we processed this thread at the earlier timestamp.
+    state.save({"t-1": earlier.isoformat()})
+
+    cleaned = cleanup_merged_pr_notifications(client)
+
+    assert len(cleaned) == 1
+    assert client.is_pr_merged_calls == [("a/x", 1)]
+    assert client.marked_done == [reactivated]
+
+
+def test_cleanup_merged_persists_newly_dismissed_threads(client: FakeClient, isolated_done_cache):
+    n = make_pr_notification(repo="a/x", number=1, id="t-1")
+    client.notifications = [n]
+    client.merged = {("a/x", 1): True}
+
+    cleanup_merged_pr_notifications(client)
+
+    # Re-load from disk to be sure save() was called, not just the in-memory dict.
+    assert state.load() == {"t-1": n.updated_at.isoformat()}
+
+
+def test_cleanup_failed_ci_skips_threads_already_in_done_cache(client: FakeClient):
+    cached = make_check_suite_notification(repo="a/x", id="t-1", title="old failure")
+    fresh = make_check_suite_notification(repo="a/x", id="t-2", title="new failure")
+    client.notifications = [cached, fresh]
+    state.save({"t-1": cached.updated_at.isoformat()})
+
+    cleaned = cleanup_failed_ci_notifications(client)
+
+    assert cleaned == [CleanedCheckSuite(repo="a/x", title="new failure")]
+    assert client.marked_done == [fresh]
+
+
+def test_cleanup_failed_ci_persists_newly_dismissed_threads(client: FakeClient):
+    n = make_check_suite_notification(repo="a/x", id="t-7", title="boom")
+    client.notifications = [n]
+
+    cleanup_failed_ci_notifications(client)
+
+    assert state.load() == {"t-7": n.updated_at.isoformat()}
