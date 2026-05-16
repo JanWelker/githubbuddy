@@ -64,6 +64,18 @@ def test_top_level_help_lists_notifications_group():
     assert "notifications" in result.output
 
 
+def test_version_flag_prints_package_version():
+    import re
+
+    from gb import __version__
+
+    result = runner.invoke(cli.app, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == __version__
+    # Sanity: matches a PEP 440-ish dotted form, not the placeholder string.
+    assert re.match(r"\d+\.\d+\.\d+", __version__)
+
+
 def test_cleanup_failed_ci_reports_nothing_to_do():
     cli.set_client_factory(lambda: FakeClient())
     result = runner.invoke(cli.app, ["notifications", "cleanup-failed-ci"])

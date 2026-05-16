@@ -11,12 +11,32 @@ from collections.abc import Callable
 
 import typer
 
+from gb import __version__
 from gb.github_client import GitHubClient, GitHubClientProtocol
 from gb.notifications import cleanup_failed_ci_notifications, cleanup_merged_pr_notifications
 
 app = typer.Typer(help="Personal CLI for daily GitHub chores.", no_args_is_help=True)
 notifications_app = typer.Typer(help="Work with GitHub notifications.", no_args_is_help=True)
 app.add_typer(notifications_app, name="notifications")
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def _root(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        help="Show the version and exit.",
+        is_eager=True,
+        callback=_version_callback,
+    ),
+) -> None:
+    pass
 
 
 def _default_client_factory() -> GitHubClientProtocol:

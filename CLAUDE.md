@@ -22,6 +22,26 @@ uv run ruff format                            # format
 
 The project is a `uv` workspace (`pyproject.toml` + `uv.lock`, src layout). The package lives under `src/gb/`, the CLI entry point is `gb = "gb.cli:app"`.
 
+## Git workflow
+
+`main` is protected on github.com: the `checks` CI job must pass before any commit lands, and force-push and branch deletion are disabled. PR review is **not** required.
+
+For any change: branch → commit → `gh pr create`. Direct pushes to `main` are technically allowed (no PR-review requirement) but protection rejects pushes whose commits haven't already passed CI somewhere — branching is the path of least resistance. After opening the PR, mark it for auto-merge with `gh pr merge --auto --squash`; with no reviewers required, GitHub merges as soon as `checks` is green. Renovate uses the same machinery (`platformAutomerge: true` in `.github/renovate.json`) and merges its own PRs automatically.
+
+**Use Conventional Commits** (`feat:`, `fix:`, `chore:`, `ci:`, `docs:`, `refactor:`, optionally with a `(scope)` and a trailing `!` for breaking). Release-please reads these to decide the next version and to generate the changelog — see "Versioning & releases" below.
+
+## Versioning & releases
+
+The package version lives in **one place**: `pyproject.toml`'s `version` field. `src/gb/__init__.py` reads it back via `importlib.metadata.version("githubbuddy")`. Do not duplicate the version string anywhere else (don't hand-edit `__init__.py`).
+
+Releases are driven by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release-please.yml` + `.release-please-config.json` + `.release-please-manifest.json`). On every push to `main` it inspects the conventional-commit history since the last tag and either creates or updates a "release PR" that:
+
+- Bumps `pyproject.toml` `version` (feat → minor, fix → patch, `!` → major; pre-1.0 majors stay minor by config).
+- Updates `CHANGELOG.md`.
+- Updates `.release-please-manifest.json`.
+
+Merging that release PR causes the action to create the matching `vX.Y.Z` git tag and a GitHub Release with the generated notes. **Do not bump the version by hand and do not create tags manually** — let release-please own that flow. If a release needs to happen on a different cadence, edit `Release-As: X.Y.Z` into a commit message rather than touching files directly.
+
 ## Architecture
 
 The codebase enforces one rule that everything else follows from: **anything that touches PyGithub or the network lives in `src/gb/github_client.py`. Feature modules never import `github` directly.**
