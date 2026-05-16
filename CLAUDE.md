@@ -34,7 +34,7 @@ For any change: branch → commit → `gh pr create`. Direct pushes to `main` ar
 
 The package version lives in **one place**: `pyproject.toml`'s `version` field. `src/gb/__init__.py` reads it back via `importlib.metadata.version("githubbuddy")`. Do not duplicate the version string anywhere else (don't hand-edit `__init__.py`).
 
-Releases are driven by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release-please.yml` + `.release-please-config.json` + `.release-please-manifest.json`). On every push to `main` it inspects the conventional-commit history since the last tag and either creates or updates a "release PR" that:
+Releases are driven by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release-please.yml` + `release-please-config.json` + `.release-please-manifest.json`). The config file has **no** leading dot — that's the upstream action's default and a non-dotted name is what the action looks for; the manifest file does have a leading dot. On every push to `main` it inspects the conventional-commit history since the last tag and either creates or updates a "release PR" that:
 
 - Bumps `pyproject.toml` `version` (feat → minor, fix → patch, `!` → major; pre-1.0 majors stay minor by config).
 - Updates `CHANGELOG.md`.
