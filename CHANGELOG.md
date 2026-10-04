@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.2](https://github.com/JanWelker/githubbuddy/compare/v0.3.1...v0.3.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* **ci:** approve the release PR's held checks ([#34](https://github.com/JanWelker/githubbuddy/issues/34)) ([7aaa693](https://github.com/JanWelker/githubbuddy/commit/7aaa69360dad67b40e273ae262379ac14f40fdac))
+
+
+### Reverts
+
+* **ci:** drop the release-please PR workarounds ([#32](https://github.com/JanWelker/githubbuddy/issues/32)) ([33ea352](https://github.com/JanWelker/githubbuddy/commit/33ea35243acdfe4dd0db1ba6f98b4cb7d11e9d4d))
+
 ## [0.3.1](https://github.com/JanWelker/githubbuddy/compare/v0.3.0...v0.3.1) (2026-10-04)
 
 

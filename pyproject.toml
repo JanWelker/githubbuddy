@@ -1,6 +1,6 @@
 [project]
 name = "githubbuddy"
-version = "0.3.1"
+version = "0.3.2"
 description = "Personal CLI for daily GitHub chores"
 readme = "README.md"
 requires-python = ">=3.11"
