@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.1](https://github.com/JanWelker/githubbuddy/compare/v0.3.0...v0.3.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **ci:** approve the release PR's held checks instead of dispatching ([#31](https://github.com/JanWelker/githubbuddy/issues/31)) ([4bd210b](https://github.com/JanWelker/githubbuddy/commit/4bd210b0e714a3e58cee38a84120028d38634564))
+* **ci:** call the shared wait-for-checks for ci-ok ([#28](https://github.com/JanWelker/githubbuddy/issues/28)) ([729e5a3](https://github.com/JanWelker/githubbuddy/commit/729e5a366daf9bba5caa80f68d104511d09e7489))
+* **ci:** run the required checks on the release-please PR ([#30](https://github.com/JanWelker/githubbuddy/issues/30)) ([096bfd0](https://github.com/JanWelker/githubbuddy/commit/096bfd0141c614907d0fd34a80c54f96869d359c))
+
 ## [0.3.0](https://github.com/JanWelker/githubbuddy/compare/v0.2.0...v0.3.0) (2026-05-16)
 
 
