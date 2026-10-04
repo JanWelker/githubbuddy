@@ -7,30 +7,9 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
-        id: release
-      # The release PR's pull_request runs, started by GITHUB_TOKEN, wait for
-      # approval like a first-time contributor's; approve the ones on its head
-      # so CI and ci-ok run and the ruleset can pass.
-      - name: Approve the release PR's checks
-        if: steps.release.outputs.prs_created == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
-        run: |
-          SHA=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .head.sha)
-          for _ in 1 2 3 4 5 6; do
-            sleep 10
-            ids=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SHA&status=action_required" \
-              --jq '.workflow_runs[].id')
-            [ -n "$ids" ] && break
-          done
-          for id in $ids; do
-            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/approve"
-          done
