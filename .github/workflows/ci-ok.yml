@@ -5,13 +5,12 @@ name: CI OK
 
 "on":
   pull_request:
-  workflow_dispatch:
 
 permissions:
   checks: read
 
 concurrency:
-  group: ci-ok-${{ github.event.pull_request.number || github.ref }}
+  group: ci-ok-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
