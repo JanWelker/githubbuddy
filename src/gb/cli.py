@@ -11,6 +11,9 @@ from collections.abc import Callable, Sequence
 from itertools import groupby
 
 import typer
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
 
 from gb import __version__
 from gb.github_client import GitHubClient, GitHubClientProtocol
@@ -94,7 +97,11 @@ def cleanup_failed_ci() -> None:
 
 
 def _echo_grouped_by_repo(items: Sequence[OpenPullRequest | OpenIssue]) -> None:
-    """Print items (already sorted by repo) under one header line per repo."""
+    """Plain text: one header line per repo, then `str(item)` lines ending in the URL.
+
+    Used when stdout is not a terminal (pipes, tests) or with --plain, so the
+    URL stays greppable instead of hiding inside a terminal hyperlink.
+    """
     for repo, group in groupby(items, key=lambda item: item.repo):
         members = list(group)
         typer.echo(f"{repo} ({len(members)})")
@@ -102,23 +109,75 @@ def _echo_grouped_by_repo(items: Sequence[OpenPullRequest | OpenIssue]) -> None:
             typer.echo(f"  {item}")
 
 
+def _badges(item: OpenPullRequest | OpenIssue) -> Text:
+    if isinstance(item, OpenPullRequest):
+        return Text("draft", style="yellow") if item.draft else Text("")
+    return Text(", ".join(item.labels), style="magenta")
+
+
+def render_grouped_by_repo(items: Sequence[OpenPullRequest | OpenIssue], console: Console) -> None:
+    """Rich output: a bold repo header and an aligned table per repo.
+
+    The number and title are OSC 8 hyperlinks to the item on github.com, so
+    the long URL doesn't have to be printed (and wrapped) on every line.
+    """
+    # Fixed widths so the columns line up across repos, not just within one.
+    number_width = max(len(f"#{item.number}") for item in items)
+    author_width = max(len(f"@{item.author}") for item in items)
+    for repo, group in groupby(items, key=lambda item: item.repo):
+        members = list(group)
+        header = Text(repo, style="bold")
+        header.append(f"  {len(members)}", style="dim")
+        console.print(header)
+        table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 1))
+        table.add_column(justify="right", style="cyan", no_wrap=True, width=number_width)
+        table.add_column(ratio=1)
+        table.add_column(style="dim", no_wrap=True, width=author_width)
+        table.add_column(no_wrap=True)
+        for item in members:
+            link = f"link {item.url}"
+            table.add_row(
+                Text(f"#{item.number}", style=link),
+                Text(item.title, style=link),
+                Text(f"@{item.author}"),
+                _badges(item),
+            )
+        console.print(table)
+
+
+_console = Console()
+
+PLAIN_OPTION = typer.Option(
+    False,
+    "--plain",
+    help="Plain text with one URL per line (the default when stdout is not a terminal).",
+)
+
+
+def _emit(items: Sequence[OpenPullRequest | OpenIssue], plain: bool) -> None:
+    if plain or not _console.is_terminal:
+        _echo_grouped_by_repo(items)
+    else:
+        render_grouped_by_repo(items, _console)
+
+
 @prs_app.command("list")
-def prs_list() -> None:
+def prs_list(plain: bool = PLAIN_OPTION) -> None:
     """List all open pull requests in all your repos."""
     client = _client_factory()
     prs = list_open_pull_requests(client)
     if not prs:
         typer.echo("No open pull requests.")
         return
-    _echo_grouped_by_repo(prs)
+    _emit(prs, plain)
 
 
 @issues_app.command("list")
-def issues_list() -> None:
+def issues_list(plain: bool = PLAIN_OPTION) -> None:
     """List all open issues in all your repos."""
     client = _client_factory()
     issues = list_open_issues(client)
     if not issues:
         typer.echo("No open issues.")
         return
-    _echo_grouped_by_repo(issues)
+    _emit(issues, plain)

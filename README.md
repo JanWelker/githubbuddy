@@ -55,7 +55,7 @@ uv run gb prs list                        # all open PRs in all your repos
 uv run gb issues list                     # all open issues in all your repos
 ```
 
-`prs list` and `issues list` walk every repo the token can see (owned, collaborator, org member), skipping archived repos and repos with no open items, and print one block per repo.
+`prs list` and `issues list` walk every repo the token can see (owned, collaborator, org member), skipping archived repos and repos with no open items, and print one block per repo. In a terminal the number and title are clickable links to github.com; when piped, or with `--plain`, each line ends with the URL instead.
 
 ## Develop
 
