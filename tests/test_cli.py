@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import io
+
 import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
 from gb import cli
+from gb.repos import OpenIssue, OpenPullRequest
 from tests.conftest import (
     FakeClient,
     FakeRepo,
@@ -171,3 +175,41 @@ def test_top_level_help_lists_prs_and_issues_groups():
     result = runner.invoke(cli.app, ["--help"])
     assert "prs" in result.output
     assert "issues" in result.output
+
+
+def _terminal_console() -> tuple[Console, io.StringIO]:
+    buf = io.StringIO()
+    return Console(file=buf, force_terminal=True, width=120, color_system="standard"), buf
+
+
+def test_render_prs_links_number_and_title_without_printing_url():
+    console, buf = _terminal_console()
+    prs = [
+        OpenPullRequest("a/b", 1, "one", "alice", False, "https://github.com/a/b/pull/1"),
+        OpenPullRequest("a/b", 2, "two", "bob", True, "https://github.com/a/b/pull/2"),
+    ]
+    cli.render_grouped_by_repo(prs, console)
+    out = buf.getvalue()
+    # OSC 8 hyperlink carries the URL; the URL is not printed as visible text.
+    assert "\x1b]8;" in out and "https://github.com/a/b/pull/1" in out
+    assert "  https://github.com/a/b/pull/1" not in out
+    for word in ("a/b", "#1", "one", "@alice", "#2", "two", "@bob", "draft"):
+        assert word in out
+
+
+def test_render_issues_shows_labels():
+    console, buf = _terminal_console()
+    issues = [OpenIssue("a/b", 4, "bug report", "alice", ("bug", "p1"), "https://x/4")]
+    cli.render_grouped_by_repo(issues, console)
+    assert "bug, p1" in buf.getvalue()
+
+
+def test_prs_list_plain_flag_prints_urls():
+    fake = FakeClient(
+        repos=[FakeRepo("a/b")],
+        open_pulls={"a/b": [make_pr(1, "one", "alice", html_url="https://github.com/a/b/pull/1")]},
+    )
+    cli.set_client_factory(lambda: fake)
+    result = runner.invoke(cli.app, ["prs", "list", "--plain"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "a/b (1)\n  #1  one  @alice  https://github.com/a/b/pull/1\n"
