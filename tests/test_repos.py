@@ -45,6 +45,16 @@ PR_URL = "https://github.com/a/b/pull/5"
 ISSUE_URL = "https://github.com/a/b/issues/9"
 
 
+def test_list_open_prs_skips_ignored_repos_case_insensitively():
+    client = FakeClient(
+        repos=[FakeRepo("a/keep"), FakeRepo("Somuch-Cloud/Homelab")],
+        open_pulls={"a/keep": [make_pr(1)], "Somuch-Cloud/Homelab": [make_pr(2)]},
+    )
+    prs = list_open_pull_requests(client, ignore=["somuch-cloud/homelab"])
+    assert [p.repo for p in prs] == ["a/keep"]
+    assert client.queried_repos == ["a/keep"]
+
+
 def test_open_pr_str_marks_draft_and_ends_with_url():
     assert str(make_open_pr(draft=True)) == f"#5  Title  @alice  [draft]  {PR_URL}"
     assert str(make_open_pr(draft=False)) == f"#5  Title  @alice  {PR_URL}"
@@ -80,6 +90,16 @@ def test_list_open_issues_skips_archived_and_idle_repos():
     )
     assert list_open_issues(client) == []
     assert client.queried_repos == []
+
+
+def test_list_open_issues_skips_ignored_repos():
+    client = FakeClient(
+        repos=[FakeRepo("a/keep"), FakeRepo("a/drop")],
+        open_issues={"a/keep": [make_issue(1)], "a/drop": [make_issue(2)]},
+    )
+    issues = list_open_issues(client, ignore={"a/drop"})
+    assert [i.repo for i in issues] == ["a/keep"]
+    assert client.queried_repos == ["a/keep"]
 
 
 def test_open_issue_str_lists_labels_and_ends_with_url():

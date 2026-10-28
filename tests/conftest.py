@@ -187,3 +187,11 @@ def isolated_done_cache(tmp_path, monkeypatch):
     cache_file = tmp_path / "done-threads.json"
     monkeypatch.setattr("gb.state.cache_path", lambda: cache_file)
     return cache_file
+
+
+@pytest.fixture(autouse=True)
+def isolated_config(tmp_path, monkeypatch):
+    """Point `gb.config` at a per-test (absent by default) config file."""
+    config_file = tmp_path / "config.toml"
+    monkeypatch.setattr("gb.config.config_path", lambda: config_file)
+    return config_file
