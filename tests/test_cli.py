@@ -116,15 +116,22 @@ def test_prs_list_groups_by_repo():
     fake = FakeClient(
         repos=[FakeRepo("a/b"), FakeRepo("c/d")],
         open_pulls={
-            "a/b": [make_pr(1, "one", "alice"), make_pr(2, "two", "bob", draft=True)],
-            "c/d": [make_pr(9, "nine", "carol")],
+            "a/b": [
+                make_pr(1, "one", "alice", html_url="https://github.com/a/b/pull/1"),
+                make_pr(2, "two", "bob", draft=True, html_url="https://github.com/a/b/pull/2"),
+            ],
+            "c/d": [make_pr(9, "nine", "carol", html_url="https://github.com/c/d/pull/9")],
         },
     )
     cli.set_client_factory(lambda: fake)
     result = runner.invoke(cli.app, ["prs", "list"])
     assert result.exit_code == 0, result.output
     assert result.output == (
-        "a/b (2)\n  #1  one  @alice\n  #2  two  @bob  [draft]\nc/d (1)\n  #9  nine  @carol\n"
+        "a/b (2)\n"
+        "  #1  one  @alice  https://github.com/a/b/pull/1\n"
+        "  #2  two  @bob  [draft]  https://github.com/a/b/pull/2\n"
+        "c/d (1)\n"
+        "  #9  nine  @carol  https://github.com/c/d/pull/9\n"
     )
 
 
@@ -140,7 +147,13 @@ def test_issues_list_groups_by_repo_and_drops_prs():
         repos=[FakeRepo("a/b")],
         open_issues={
             "a/b": [
-                make_issue(4, "bug report", "alice", labels=["bug"]),
+                make_issue(
+                    4,
+                    "bug report",
+                    "alice",
+                    labels=["bug"],
+                    html_url="https://github.com/a/b/issues/4",
+                ),
                 make_issue(5, "a PR", "bob", pull_request=object()),
             ]
         },
@@ -148,7 +161,10 @@ def test_issues_list_groups_by_repo_and_drops_prs():
     cli.set_client_factory(lambda: fake)
     result = runner.invoke(cli.app, ["issues", "list"])
     assert result.exit_code == 0, result.output
-    assert result.output == "a/b (1)\n  #4  bug report  @alice  [bug]\n"
+    assert (
+        result.output
+        == "a/b (1)\n  #4  bug report  @alice  [bug]  https://github.com/a/b/issues/4\n"
+    )
 
 
 def test_top_level_help_lists_prs_and_issues_groups():

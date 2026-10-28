@@ -36,7 +36,8 @@ class OpenPullRequest:
 
     def __str__(self) -> str:
         suffix = "  [draft]" if self.draft else ""
-        return f"#{self.number}  {self.title}  @{self.author}{suffix}"
+        # The plain URL at the end is what terminals turn into a clickable link.
+        return f"#{self.number}  {self.title}  @{self.author}{suffix}  {self.url}"
 
 
 def list_open_pull_requests(client: GitHubClientProtocol) -> list[OpenPullRequest]:
@@ -71,7 +72,7 @@ class OpenIssue:
 
     def __str__(self) -> str:
         suffix = f"  [{', '.join(self.labels)}]" if self.labels else ""
-        return f"#{self.number}  {self.title}  @{self.author}{suffix}"
+        return f"#{self.number}  {self.title}  @{self.author}{suffix}  {self.url}"
 
 
 def is_plain_issue(issue) -> bool:

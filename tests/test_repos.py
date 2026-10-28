@@ -41,13 +41,17 @@ def test_list_open_prs_skips_archived_and_idle_repos():
     assert client.queried_repos == ["a/active"]
 
 
-def test_open_pr_str_marks_draft():
-    assert str(make_open_pr(draft=True)) == "#5  Title  @alice  [draft]"
-    assert str(make_open_pr(draft=False)) == "#5  Title  @alice"
+PR_URL = "https://github.com/a/b/pull/5"
+ISSUE_URL = "https://github.com/a/b/issues/9"
+
+
+def test_open_pr_str_marks_draft_and_ends_with_url():
+    assert str(make_open_pr(draft=True)) == f"#5  Title  @alice  [draft]  {PR_URL}"
+    assert str(make_open_pr(draft=False)) == f"#5  Title  @alice  {PR_URL}"
 
 
 def make_open_pr(**kw) -> OpenPullRequest:
-    base = dict(repo="a/b", number=5, title="Title", author="alice", draft=False, url="")
+    base = dict(repo="a/b", number=5, title="Title", author="alice", draft=False, url=PR_URL)
     return OpenPullRequest(**{**base, **kw})
 
 
@@ -78,7 +82,8 @@ def test_list_open_issues_skips_archived_and_idle_repos():
     assert client.queried_repos == []
 
 
-def test_open_issue_str_lists_labels():
-    issue = OpenIssue("a/b", 9, "Title", "alice", ("bug",), "")
-    assert str(issue) == "#9  Title  @alice  [bug]"
-    assert str(OpenIssue("a/b", 9, "Title", "alice", (), "")) == "#9  Title  @alice"
+def test_open_issue_str_lists_labels_and_ends_with_url():
+    issue = OpenIssue("a/b", 9, "Title", "alice", ("bug",), ISSUE_URL)
+    assert str(issue) == f"#9  Title  @alice  [bug]  {ISSUE_URL}"
+    plain = OpenIssue("a/b", 9, "Title", "alice", (), ISSUE_URL)
+    assert str(plain) == f"#9  Title  @alice  {ISSUE_URL}"
