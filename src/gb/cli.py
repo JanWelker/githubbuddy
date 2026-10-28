@@ -7,17 +7,23 @@ new features can be added without crowding the top level.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from itertools import groupby
 
 import typer
 
 from gb import __version__
 from gb.github_client import GitHubClient, GitHubClientProtocol
 from gb.notifications import cleanup_failed_ci_notifications, cleanup_merged_pr_notifications
+from gb.repos import OpenIssue, OpenPullRequest, list_open_issues, list_open_pull_requests
 
 app = typer.Typer(help="Personal CLI for daily GitHub chores.", no_args_is_help=True)
 notifications_app = typer.Typer(help="Work with GitHub notifications.", no_args_is_help=True)
 app.add_typer(notifications_app, name="notifications")
+prs_app = typer.Typer(help="Work with pull requests across all your repos.", no_args_is_help=True)
+app.add_typer(prs_app, name="prs")
+issues_app = typer.Typer(help="Work with issues across all your repos.", no_args_is_help=True)
+app.add_typer(issues_app, name="issues")
 
 
 def _version_callback(value: bool) -> None:
@@ -85,3 +91,34 @@ def cleanup_failed_ci() -> None:
     typer.echo(f"Marked {len(cleaned)} notification(s) as done:")
     for item in cleaned:
         typer.echo(f"  - {item}")
+
+
+def _echo_grouped_by_repo(items: Sequence[OpenPullRequest | OpenIssue]) -> None:
+    """Print items (already sorted by repo) under one header line per repo."""
+    for repo, group in groupby(items, key=lambda item: item.repo):
+        members = list(group)
+        typer.echo(f"{repo} ({len(members)})")
+        for item in members:
+            typer.echo(f"  {item}")
+
+
+@prs_app.command("list")
+def prs_list() -> None:
+    """List all open pull requests in all your repos."""
+    client = _client_factory()
+    prs = list_open_pull_requests(client)
+    if not prs:
+        typer.echo("No open pull requests.")
+        return
+    _echo_grouped_by_repo(prs)
+
+
+@issues_app.command("list")
+def issues_list() -> None:
+    """List all open issues in all your repos."""
+    client = _client_factory()
+    issues = list_open_issues(client)
+    if not issues:
+        typer.echo("No open issues.")
+        return
+    _echo_grouped_by_repo(issues)
