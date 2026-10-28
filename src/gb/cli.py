@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from gb import __version__
+from gb import __version__, config
 from gb.github_client import GitHubClient, GitHubClientProtocol
 from gb.notifications import cleanup_failed_ci_notifications, cleanup_merged_pr_notifications
 from gb.repos import OpenIssue, OpenPullRequest, list_open_issues, list_open_pull_requests
@@ -152,6 +152,22 @@ PLAIN_OPTION = typer.Option(
     "--plain",
     help="Plain text with one URL per line (the default when stdout is not a terminal).",
 )
+IGNORE_OPTION = typer.Option(
+    None,
+    "--ignore",
+    metavar="OWNER/REPO",
+    help="Skip this repo (repeatable). Adds to `repos.ignore` in the config file.",
+)
+
+
+def _ignored_repos(extra: list[str] | None) -> set[str]:
+    """Union of the config file's `repos.ignore` and any --ignore flags."""
+    try:
+        cfg = config.load()
+    except config.ConfigError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    return set(cfg.ignored_repos) | {name.lower() for name in extra or []}
 
 
 def _emit(items: Sequence[OpenPullRequest | OpenIssue], plain: bool) -> None:
@@ -162,10 +178,11 @@ def _emit(items: Sequence[OpenPullRequest | OpenIssue], plain: bool) -> None:
 
 
 @prs_app.command("list")
-def prs_list(plain: bool = PLAIN_OPTION) -> None:
+def prs_list(plain: bool = PLAIN_OPTION, ignore: list[str] | None = IGNORE_OPTION) -> None:
     """List all open pull requests in all your repos."""
+    ignored = _ignored_repos(ignore)
     client = _client_factory()
-    prs = list_open_pull_requests(client)
+    prs = list_open_pull_requests(client, ignore=ignored)
     if not prs:
         typer.echo("No open pull requests.")
         return
@@ -173,10 +190,11 @@ def prs_list(plain: bool = PLAIN_OPTION) -> None:
 
 
 @issues_app.command("list")
-def issues_list(plain: bool = PLAIN_OPTION) -> None:
+def issues_list(plain: bool = PLAIN_OPTION, ignore: list[str] | None = IGNORE_OPTION) -> None:
     """List all open issues in all your repos."""
+    ignored = _ignored_repos(ignore)
     client = _client_factory()
-    issues = list_open_issues(client)
+    issues = list_open_issues(client, ignore=ignored)
     if not issues:
         typer.echo("No open issues.")
         return

@@ -57,6 +57,13 @@ uv run gb issues list                     # all open issues in all your repos
 
 `prs list` and `issues list` walk every repo the token can see (owned, collaborator, org member), skipping archived repos and repos with no open items, and print one block per repo. In a terminal the number and title are clickable links to github.com; when piped, or with `--plain`, each line ends with the URL instead.
 
+To leave repos out, pass `--ignore owner/repo` (repeatable) or list them once in `~/.config/gb/config.toml` (`$XDG_CONFIG_HOME` is honoured):
+
+```toml
+[repos]
+ignore = ["somuch-cloud/homelab"]
+```
+
 ## Develop
 
 ```sh

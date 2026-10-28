@@ -213,3 +213,34 @@ def test_prs_list_plain_flag_prints_urls():
     result = runner.invoke(cli.app, ["prs", "list", "--plain"])
     assert result.exit_code == 0, result.output
     assert result.output == "a/b (1)\n  #1  one  @alice  https://github.com/a/b/pull/1\n"
+
+
+def _two_repo_client() -> FakeClient:
+    return FakeClient(
+        repos=[FakeRepo("a/keep"), FakeRepo("a/drop")],
+        open_pulls={"a/keep": [make_pr(1, "keep")], "a/drop": [make_pr(2, "drop")]},
+        open_issues={"a/keep": [make_issue(1, "keep")], "a/drop": [make_issue(2, "drop")]},
+    )
+
+
+def test_prs_list_ignore_flag_skips_repo():
+    cli.set_client_factory(_two_repo_client)
+    result = runner.invoke(cli.app, ["prs", "list", "--ignore", "A/DROP"])
+    assert result.exit_code == 0, result.output
+    assert "a/keep" in result.output and "a/drop" not in result.output
+
+
+def test_issues_list_reads_ignore_from_config(isolated_config):
+    isolated_config.write_text('[repos]\nignore = ["a/drop"]\n')
+    cli.set_client_factory(_two_repo_client)
+    result = runner.invoke(cli.app, ["issues", "list"])
+    assert result.exit_code == 0, result.output
+    assert "a/keep" in result.output and "a/drop" not in result.output
+
+
+def test_list_reports_malformed_config(isolated_config):
+    isolated_config.write_text("[repos\n")
+    cli.set_client_factory(_two_repo_client)
+    result = runner.invoke(cli.app, ["prs", "list"])
+    assert result.exit_code == 1
+    assert "config.toml" in result.output
