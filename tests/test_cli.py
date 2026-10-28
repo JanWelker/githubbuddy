@@ -6,8 +6,11 @@ from typer.testing import CliRunner
 from gb import cli
 from tests.conftest import (
     FakeClient,
+    FakeRepo,
     make_check_suite_notification,
+    make_issue,
     make_issue_notification,
+    make_pr,
     make_pr_notification,
 )
 
@@ -100,3 +103,55 @@ def test_cleanup_failed_ci_marks_and_reports():
     assert "a/x — build broke" in result.output
     assert "b/y — startup failed" in result.output
     assert len(fake.marked_done) == 2
+
+
+def test_prs_list_reports_nothing_open():
+    cli.set_client_factory(lambda: FakeClient(repos=[FakeRepo("a/b")]))
+    result = runner.invoke(cli.app, ["prs", "list"])
+    assert result.exit_code == 0, result.output
+    assert "No open pull requests." in result.output
+
+
+def test_prs_list_groups_by_repo():
+    fake = FakeClient(
+        repos=[FakeRepo("a/b"), FakeRepo("c/d")],
+        open_pulls={
+            "a/b": [make_pr(1, "one", "alice"), make_pr(2, "two", "bob", draft=True)],
+            "c/d": [make_pr(9, "nine", "carol")],
+        },
+    )
+    cli.set_client_factory(lambda: fake)
+    result = runner.invoke(cli.app, ["prs", "list"])
+    assert result.exit_code == 0, result.output
+    assert result.output == (
+        "a/b (2)\n  #1  one  @alice\n  #2  two  @bob  [draft]\nc/d (1)\n  #9  nine  @carol\n"
+    )
+
+
+def test_issues_list_reports_nothing_open():
+    cli.set_client_factory(lambda: FakeClient(repos=[FakeRepo("a/b")]))
+    result = runner.invoke(cli.app, ["issues", "list"])
+    assert result.exit_code == 0, result.output
+    assert "No open issues." in result.output
+
+
+def test_issues_list_groups_by_repo_and_drops_prs():
+    fake = FakeClient(
+        repos=[FakeRepo("a/b")],
+        open_issues={
+            "a/b": [
+                make_issue(4, "bug report", "alice", labels=["bug"]),
+                make_issue(5, "a PR", "bob", pull_request=object()),
+            ]
+        },
+    )
+    cli.set_client_factory(lambda: fake)
+    result = runner.invoke(cli.app, ["issues", "list"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "a/b (1)\n  #4  bug report  @alice  [bug]\n"
+
+
+def test_top_level_help_lists_prs_and_issues_groups():
+    result = runner.invoke(cli.app, ["--help"])
+    assert "prs" in result.output
+    assert "issues" in result.output
