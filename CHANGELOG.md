@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0](https://github.com/JanWelker/githubbuddy/compare/v0.3.2...v0.4.0) (2026-10-28)
+
+
+### Features
+
+* **repos:** append the GitHub URL to each listed PR and issue ([#45](https://github.com/JanWelker/githubbuddy/issues/45)) ([fb6b123](https://github.com/JanWelker/githubbuddy/commit/fb6b123dca3884ba85c19d49d07f532e56753333))
+* **repos:** list open PRs and issues across all repos ([#43](https://github.com/JanWelker/githubbuddy/issues/43)) ([f415a5b](https://github.com/JanWelker/githubbuddy/commit/f415a5b15139ff6015b9886d20343644831e81bb))
+* **repos:** render prs/issues lists as aligned tables with hyperlinks ([#46](https://github.com/JanWelker/githubbuddy/issues/46)) ([4352523](https://github.com/JanWelker/githubbuddy/commit/4352523e27b7adea246b91e28bf7778d6e6d1255))
+
 ## [0.3.2](https://github.com/JanWelker/githubbuddy/compare/v0.3.1...v0.3.2) (2026-10-04)
 
 
