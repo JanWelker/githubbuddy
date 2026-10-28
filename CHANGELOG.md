@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/JanWelker/githubbuddy/compare/v0.4.0...v0.5.0) (2026-10-28)
+
+
+### Features
+
+* **repos:** ignore repos via config file or --ignore ([#47](https://github.com/JanWelker/githubbuddy/issues/47)) ([1f6d444](https://github.com/JanWelker/githubbuddy/commit/1f6d444e3848a418b66f346a115aed81e80cfc1a))
+
 ## [0.4.0](https://github.com/JanWelker/githubbuddy/compare/v0.3.2...v0.4.0) (2026-10-28)
 
 
