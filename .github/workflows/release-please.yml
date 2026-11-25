@@ -16,7 +16,7 @@ jobs:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
       # The release PR is pushed with GITHUB_TOKEN, and its pull_request runs
       # wait for approval like a first-time contributor's, so the ruleset's
-      # ci-ok never reports. Approve the held runs on the PR's head.
+      # required checks never report. Approve the held runs on the PR's head.
       - name: Approve the release PR's held checks
         env:
           GH_TOKEN: ${{ github.token }}
